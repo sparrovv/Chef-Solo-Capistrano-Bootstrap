@@ -39,7 +39,6 @@ cookbook_dir = '/var/chef-solo'
 dna_dir = '/etc/chef'
 node = ARGV[-2]
 
-
 namespace :chef do
   desc "Initialize a fresh Ubuntu install; create users, groups, upload pubkey, etc."
   task :init_server, roles: :target do
@@ -95,6 +94,22 @@ Defaults  env_reset
     sudo "mkdir -p #{ree_prefix}/lib/ruby/gems/1.8/gems" # workaround for bug in REE installer
     sudo "/tmp/#{ree_version}/installer -a #{ree_prefix} --dont-install-useful-gems --no-dev-docs"
     run "echo 'gem: --no-ri --no-rdoc' | #{sudo} tee -a /etc/gemrc"
+  end
+
+  desc "Install Ruby 1.9.2-p290 from sources"
+  task :install_ruby192, roles: :target do
+    ruby_version = 'ruby-1.9.2-p290'
+    path = '/tmp'
+    temp_path = path + "/" + ruby_version
+
+    sudo 'apt-get update'
+    sudo 'apt-get -y upgrade'
+    sudo 'apt-get install -y build-essential wget zlib1g-dev libssl-dev libffi-dev'
+    run "cd #{path} && wget ftp://ftp.ruby-lang.org//pub/ruby/1.9/ruby-1.9.2-p290.tar.bz2 && tar xjf ruby-1.9.2-p290.tar.bz2"
+
+    bash_sudo "cd #{temp_path} && ./configure && make && make install"
+    bash_sudo "cd #{temp_path}/ext/openssl/ && ruby extconf.rb && make && make install"
+    bash_sudo "cd #{temp_path}/ext/readline/ && ruby extconf.rb && make && make install"
   end
 
   desc "install Ruby (using RVM)"
